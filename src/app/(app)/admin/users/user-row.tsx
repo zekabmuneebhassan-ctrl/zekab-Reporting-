@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { setUserRole } from "@/lib/actions";
+import { setUserRole, deleteMember } from "@/lib/actions";
 
 interface Props {
   user: {
@@ -13,14 +13,32 @@ interface Props {
     last_sign_in: string | null;
   };
   networks: { id: string; name: string }[];
+  isSelf: boolean;
 }
 
-export function UserRow({ user, networks }: Props) {
+export function UserRow({ user, networks, isSelf }: Props) {
   const router = useRouter();
   const [role, setRole] = useState(user.role);
   const [scope, setScope] = useState<string[]>(user.network_scope ?? []);
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [removing, setRemoving] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  async function remove() {
+    if (!confirm(`Remove ${user.email}? They will lose access immediately.`)) {
+      return;
+    }
+    setRemoving(true);
+    setRemoveError(null);
+    const res = await deleteMember(user.user_id);
+    setRemoving(false);
+    if (res.ok) {
+      router.refresh();
+    } else {
+      setRemoveError(res.error ?? "Could not remove member.");
+    }
+  }
 
   const scopeEnabled = role === "editor";
 
@@ -90,9 +108,24 @@ export function UserRow({ user, networks }: Props) {
           : "never"}
       </td>
       <td className="td">
-        <button className="btn-primary px-2 py-1 text-xs" onClick={save} disabled={busy}>
-          {busy ? "…" : saved ? "✓ Saved" : "Save"}
-        </button>
+        <div className="flex items-center gap-2">
+          <button className="btn-primary px-2 py-1 text-xs" onClick={save} disabled={busy}>
+            {busy ? "…" : saved ? "✓ Saved" : "Save"}
+          </button>
+          {!isSelf && (
+            <button
+              className="btn-ghost px-2 py-1 text-xs text-neg"
+              onClick={remove}
+              disabled={removing}
+              title="Remove this user"
+            >
+              {removing ? "…" : "Remove"}
+            </button>
+          )}
+        </div>
+        {removeError && (
+          <p className="mt-1 text-xs text-neg">{removeError}</p>
+        )}
       </td>
     </tr>
   );

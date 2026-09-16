@@ -16,7 +16,7 @@ interface AdminUser {
 }
 
 export default async function UsersPage() {
-  await requireRole(["admin"]);
+  const me = await requireRole(["admin"]);
   const supabase = createClient();
   const [{ data }, networks] = await Promise.all([
     supabase.rpc("admin_list_users"),
@@ -54,6 +54,7 @@ export default async function UsersPage() {
                   key={u.user_id}
                   user={u}
                   networks={networks.map((n) => ({ id: n.id, name: n.name }))}
+                  isSelf={u.user_id === me.id}
                 />
               ))}
             </tbody>

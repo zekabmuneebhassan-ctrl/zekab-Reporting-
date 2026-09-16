@@ -220,6 +220,26 @@ export async function createMember(
   return { ok: true, tempPassword: password, email };
 }
 
+/**
+ * Admin-only: permanently remove a member (auth user). Deleting the auth user
+ * cascades to their user_roles row (see 0001_init.sql). Admins can't remove
+ * their own account, to avoid locking everyone out.
+ */
+export async function deleteMember(user_id: string): Promise<ActionResult> {
+  const me = await requireRole(["admin"]);
+  if (!user_id) return { ok: false, error: "Missing user." };
+  if (user_id === me.id) {
+    return { ok: false, error: "You can't remove your own account." };
+  }
+
+  const admin = createServiceClient();
+  const { error } = await admin.auth.admin.deleteUser(user_id);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/admin/users");
+  return { ok: true };
+}
+
 function generatePassword(): string {
   const chars =
     "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789@#%";
