@@ -55,7 +55,7 @@ export default async function EntryPage({
       >
         <DatePicker value={date} />
       </PageHeader>
-      <EntryGrid date={date} rows={rows} />
+      <EntryGrid key={date} date={date} rows={rows} />
     </div>
   );
 }
