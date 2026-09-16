@@ -6,7 +6,7 @@ import { CsvImporter } from "./importer";
 export const dynamic = "force-dynamic";
 
 export default async function ImportPage() {
-  await requireRole(["admin", "editor"]);
+  const user = await requireRole(["admin", "editor"]);
   const [apps, networks] = await Promise.all([getApps(), getNetworks()]);
   const networkName = new Map(networks.map((n) => [n.id, n.name]));
 
@@ -22,6 +22,8 @@ export default async function ImportPage() {
           name: a.name,
           network: networkName.get(a.network_id) ?? "",
         }))}
+        accounts={networks.map((n) => n.name)}
+        isAdmin={user.role === "admin"}
       />
     </div>
   );

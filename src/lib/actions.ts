@@ -325,6 +325,119 @@ export async function bulkImportRows(
   return { ok: true, inserted: payload.length };
 }
 
+/**
+ * Bulk import for a raw worksheet-style CSV (date, app under an account-name
+ * header, loosely-named metric columns). Matches apps by name under the given
+ * account; admins may also auto-create the account and/or any apps that don't
+ * exist yet (editors get a clear error naming what's missing instead).
+ */
+export async function bulkImportSmart(
+  accountName: string,
+  rows: {
+    app: string;
+    date: string;
+    admob_revenue: number;
+    inapp_revenue: number;
+    campaign_spend: number;
+    installs?: number;
+    uninstalls?: number;
+    active_users?: number;
+  }[],
+): Promise<
+  ActionResult & { inserted?: number; createdApps?: number; createdAccount?: boolean }
+> {
+  const user = await requireRole(["admin", "editor"]);
+  const name = accountName.trim();
+  if (!name) return { ok: false, error: "Missing account name." };
+  if (rows.length === 0) return { ok: false, error: "No rows to import." };
+
+  const supabase = createClient();
+  const isAdmin = user.role === "admin";
+
+  let { data: net } = await supabase
+    .from("networks")
+    .select("id")
+    .eq("name", name)
+    .maybeSingle();
+  let createdAccount = false;
+  if (!net) {
+    if (!isAdmin) {
+      return {
+        ok: false,
+        error: `Account "${name}" doesn't exist yet — ask an admin to add it first.`,
+      };
+    }
+    const { data: inserted, error } = await supabase
+      .from("networks")
+      .insert({ name, platform: "Android" })
+      .select("id")
+      .single();
+    if (error) return { ok: false, error: error.message };
+    net = inserted;
+    createdAccount = true;
+  }
+  const networkId = net!.id;
+
+  const uniqueAppNames = Array.from(
+    new Set(rows.map((r) => r.app.trim()).filter(Boolean)),
+  );
+  const { data: existingApps } = await supabase
+    .from("apps")
+    .select("id, name")
+    .eq("network_id", networkId);
+  const appIdByName = new Map(
+    (existingApps ?? []).map((a) => [a.name.trim().toLowerCase(), a.id as string]),
+  );
+  const missing = uniqueAppNames.filter((n) => !appIdByName.has(n.toLowerCase()));
+
+  let createdApps = 0;
+  if (missing.length > 0) {
+    if (!isAdmin) {
+      return {
+        ok: false,
+        error: `${missing.length} app(s) under "${name}" don't exist yet — ask an admin to add them first: ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? "…" : ""}`,
+      };
+    }
+    const { data: insertedApps, error } = await supabase
+      .from("apps")
+      .insert(missing.map((n) => ({ network_id: networkId, name: n })))
+      .select("id, name");
+    if (error) return { ok: false, error: error.message };
+    for (const a of insertedApps ?? []) {
+      appIdByName.set(a.name.trim().toLowerCase(), a.id);
+    }
+    createdApps = insertedApps?.length ?? 0;
+  }
+
+  const payload = rows
+    .filter((r) => r.date && appIdByName.has(r.app.trim().toLowerCase()))
+    .map((r) => ({
+      app_id: appIdByName.get(r.app.trim().toLowerCase())!,
+      date: r.date,
+      admob_revenue: r.admob_revenue ?? 0,
+      inapp_revenue: r.inapp_revenue ?? 0,
+      campaign_spend: r.campaign_spend ?? 0,
+      installs: r.installs,
+      uninstalls: r.uninstalls,
+      active_users: r.active_users,
+      source: "manual" as const,
+      entered_by: user.id,
+    }));
+  if (payload.length === 0) {
+    return { ok: false, error: "No valid rows (each needs an app name and a date)." };
+  }
+
+  const { error } = await supabase
+    .from("daily_metrics")
+    .upsert(payload, { onConflict: "app_id,date" });
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/dashboard");
+  revalidatePath("/monthly");
+  revalidatePath("/admin/networks");
+  return { ok: true, inserted: payload.length, createdApps, createdAccount };
+}
+
 function num(v: FormDataEntryValue | null): number {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
