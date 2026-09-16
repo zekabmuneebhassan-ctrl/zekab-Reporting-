@@ -39,9 +39,9 @@ export function NetworkManager({
 
   return (
     <div className="space-y-6">
-      {/* Add network */}
+      {/* Add account */}
       <div className="card p-4">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">Add network</h2>
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">Add account</h2>
         <form
           onSubmit={(e) => submit(saveNetwork, e)}
           className="flex flex-wrap items-end gap-3"
@@ -58,7 +58,7 @@ export function NetworkManager({
             </select>
           </div>
           <input type="hidden" name="active" value="true" />
-          <button className="btn-primary">Add network</button>
+          <button className="btn-primary">Add account</button>
         </form>
       </div>
 
@@ -70,7 +70,7 @@ export function NetworkManager({
           className="flex flex-wrap items-end gap-3"
         >
           <div>
-            <label className="label">Network</label>
+            <label className="label">Account</label>
             <select name="network_id" required className="input w-48">
               <option value="">Select…</option>
               {networks.map((n) => (

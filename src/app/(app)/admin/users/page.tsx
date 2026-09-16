@@ -43,7 +43,7 @@ export default async function UsersPage() {
               <tr>
                 <th className="th">Email</th>
                 <th className="th">Role</th>
-                <th className="th">Network scope (editors)</th>
+                <th className="th">Account scope (editors)</th>
                 <th className="th">Last sign-in</th>
                 <th className="th"></th>
               </tr>

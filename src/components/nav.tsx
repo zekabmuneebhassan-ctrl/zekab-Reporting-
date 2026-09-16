@@ -11,6 +11,7 @@ type IconName =
   | "clock"
   | "edit"
   | "upload"
+  | "download"
   | "users"
   | "layers";
 
@@ -33,6 +34,7 @@ const SECTIONS: Section[] = [
       { href: "/dashboard", label: "Daily dashboard", roles: ["admin", "editor", "viewer"], icon: "dashboard" },
       { href: "/monthly", label: "Monthly summary", roles: ["admin", "editor", "viewer"], icon: "calendar" },
       { href: "/twelve-hour", label: "12-hour report", roles: ["admin", "editor", "viewer"], icon: "clock" },
+      { href: "/export", label: "Export report", roles: ["admin", "editor", "viewer"], icon: "download" },
     ],
   },
   {
@@ -46,7 +48,7 @@ const SECTIONS: Section[] = [
     title: "Admin",
     items: [
       { href: "/admin/users", label: "Users & roles", roles: ["admin"], icon: "users" },
-      { href: "/admin/networks", label: "Networks & apps", roles: ["admin"], icon: "layers" },
+      { href: "/admin/networks", label: "Accounts & apps", roles: ["admin"], icon: "layers" },
     ],
   },
 ];
@@ -172,6 +174,13 @@ function Icon({ name, className }: { name: IconName; className?: string }) {
         <svg {...common}>
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
           <path d="M17 8l-5-5-5 5M12 3v12" />
+        </svg>
+      );
+    case "download":
+      return (
+        <svg {...common}>
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="M7 10l5 5 5-5M12 15V3" />
         </svg>
       );
     case "users":

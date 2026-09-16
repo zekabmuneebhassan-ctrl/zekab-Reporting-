@@ -12,8 +12,8 @@ export default async function NetworksPage() {
   return (
     <div>
       <PageHeader
-        title="Networks & apps"
-        subtitle="Add networks and apps without touching code — a new network needs zero schema changes."
+        title="Accounts & apps"
+        subtitle="Add accounts and apps without touching code — a new account needs zero schema changes."
       />
       <NetworkManager
         networks={networks}

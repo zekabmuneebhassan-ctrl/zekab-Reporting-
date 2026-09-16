@@ -109,7 +109,7 @@ export default async function DashboardPage({
             </div>
             <div className="card p-4">
               <h2 className="mb-2 text-sm font-semibold text-gray-700">
-                Net by network (today)
+                Net by account (today)
               </h2>
               <NetworkBarChart
                 data={networks.map((n) => ({
@@ -120,15 +120,15 @@ export default async function DashboardPage({
             </div>
           </div>
 
-          {/* Per-network table */}
+          {/* Per-account table */}
           <div className="card mt-4 overflow-x-auto">
             <div className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-700">
-              By network — {fmtDate(date)}
+              By account — {fmtDate(date)}
             </div>
             <table className="min-w-full">
               <thead className="border-b border-gray-100">
                 <tr>
-                  <th className="th">Network</th>
+                  <th className="th">Account</th>
                   <th className="th text-right">AdMob</th>
                   <th className="th text-right">In-app</th>
                   <th className="th text-right">Spend</th>
@@ -181,7 +181,7 @@ export default async function DashboardPage({
               <thead className="border-b border-gray-100">
                 <tr>
                   <th className="th">App</th>
-                  <th className="th">Network</th>
+                  <th className="th">Account</th>
                   <th className="th text-right">AdMob</th>
                   <th className="th text-right">Spend</th>
                   <th className="th text-right">Net</th>

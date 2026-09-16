@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { requireRole, requireUser } from "@/lib/auth";
+import { getMetricsRange } from "@/lib/queries";
+import { toCsv } from "@/lib/csv";
 
 export interface ActionResult {
   ok: boolean;
@@ -137,7 +139,7 @@ export async function saveApp(form: FormData): Promise<ActionResult> {
     active: form.get("active") === "on" || form.get("active") === "true",
   };
   if (!row.network_id || !row.name) {
-    return { ok: false, error: "Network and app name are required." };
+    return { ok: false, error: "Account and app name are required." };
   }
   const q = id
     ? supabase.from("apps").update(row).eq("id", id)
@@ -218,6 +220,48 @@ export async function createMember(
 
   revalidatePath("/admin/users");
   return { ok: true, tempPassword: password, email };
+}
+
+const EXPORT_COLUMNS = [
+  { key: "date", label: "Date" },
+  { key: "network_name", label: "Account" },
+  { key: "app_name", label: "App" },
+  { key: "active_users", label: "Active users" },
+  { key: "installs", label: "Installs" },
+  { key: "uninstalls", label: "Uninstalls" },
+  { key: "admob_revenue", label: "AdMob revenue" },
+  { key: "inapp_revenue", label: "In-app revenue" },
+  { key: "campaign_spend", label: "Campaign spend" },
+  { key: "net", label: "Net" },
+  { key: "source", label: "Source" },
+] as const;
+
+/**
+ * Any signed-in role: export daily_metrics for an inclusive custom date range
+ * as a CSV string, optionally narrowed to one network. Read-only, so it uses
+ * the caller's own session (RLS already allows all authenticated roles to
+ * read daily_metrics).
+ */
+export async function exportMetricsCsv(
+  from: string,
+  to: string,
+  networkId?: string,
+): Promise<ActionResult & { csv?: string; filename?: string; rows?: number }> {
+  await requireUser();
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+    return { ok: false, error: "Enter valid start and end dates." };
+  }
+  if (from > to) {
+    return { ok: false, error: "Start date must be on or before the end date." };
+  }
+
+  let rows = await getMetricsRange(from, to);
+  if (networkId) rows = rows.filter((r) => r.network_id === networkId);
+
+  const csv = toCsv(EXPORT_COLUMNS, rows);
+  const filename = `metrics_${from}_to_${to}.csv`;
+  return { ok: true, csv, filename, rows: rows.length };
 }
 
 /**

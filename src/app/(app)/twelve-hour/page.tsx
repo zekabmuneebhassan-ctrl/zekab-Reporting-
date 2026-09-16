@@ -94,7 +94,7 @@ export default async function TwelveHourPage({
             <thead className="border-b border-gray-100">
               <tr>
                 <th className="th">App</th>
-                <th className="th">Network</th>
+                <th className="th">Account</th>
                 <th className="th text-right">AdMob (today)</th>
                 <th className="th text-right">AdMob (yday)</th>
                 <th className="th text-right">Δ AdMob</th>

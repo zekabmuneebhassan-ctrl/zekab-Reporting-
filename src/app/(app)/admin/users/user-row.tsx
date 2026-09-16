@@ -99,7 +99,7 @@ export function UserRow({ user, networks, isSelf }: Props) {
               </label>
             ))}
             <span className="text-xs text-gray-400">
-              {scope.length === 0 ? "(all networks)" : ""}
+              {scope.length === 0 ? "(all accounts)" : ""}
             </span>
           </div>
         ) : (

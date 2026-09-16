@@ -79,7 +79,7 @@ export default async function MonthlyPage({
     <div>
       <PageHeader
         title="Monthly summary"
-        subtitle={`${monthLabel(ym)} · ${networkNames.length} networks · computed live from daily metrics`}
+        subtitle={`${monthLabel(ym)} · ${networkNames.length} accounts · computed live from daily metrics`}
       >
         <MonthPicker value={ym} options={months} />
       </PageHeader>
