@@ -16,14 +16,24 @@ interface Props {
   isSelf: boolean;
 }
 
+function sameScope(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const sortedB = [...b].sort();
+  return [...a].sort().every((v, i) => v === sortedB[i]);
+}
+
 export function UserRow({ user, networks, isSelf }: Props) {
   const router = useRouter();
   const [role, setRole] = useState(user.role);
   const [scope, setScope] = useState<string[]>(user.network_scope ?? []);
   const [busy, setBusy] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
+
+  // Compares against the props (the last-saved server state), so the button
+  // reflects reality across reloads instead of resetting to "unsaved" every render.
+  const dirty =
+    role !== user.role || !sameScope(scope, user.network_scope ?? []);
 
   async function remove() {
     if (!confirm(`Remove ${user.email}? They will lose access immediately.`)) {
@@ -44,7 +54,6 @@ export function UserRow({ user, networks, isSelf }: Props) {
 
   async function save() {
     setBusy(true);
-    setSaved(false);
     const fd = new FormData();
     fd.set("user_id", user.user_id);
     fd.set("role", role);
@@ -52,7 +61,6 @@ export function UserRow({ user, networks, isSelf }: Props) {
     const res = await setUserRole(fd);
     setBusy(false);
     if (res.ok) {
-      setSaved(true);
       router.refresh();
     }
   }
@@ -64,10 +72,7 @@ export function UserRow({ user, networks, isSelf }: Props) {
         <select
           className="input w-28"
           value={role}
-          onChange={(e) => {
-            setRole(e.target.value as Props["user"]["role"]);
-            setSaved(false);
-          }}
+          onChange={(e) => setRole(e.target.value as Props["user"]["role"])}
         >
           <option value="viewer">viewer</option>
           <option value="editor">editor</option>
@@ -82,14 +87,13 @@ export function UserRow({ user, networks, isSelf }: Props) {
                 <input
                   type="checkbox"
                   checked={scope.includes(n.id)}
-                  onChange={(e) => {
+                  onChange={(e) =>
                     setScope((s) =>
                       e.target.checked
                         ? [...s, n.id]
                         : s.filter((x) => x !== n.id),
-                    );
-                    setSaved(false);
-                  }}
+                    )
+                  }
                 />
                 {n.name}
               </label>
@@ -109,8 +113,12 @@ export function UserRow({ user, networks, isSelf }: Props) {
       </td>
       <td className="td">
         <div className="flex items-center gap-2">
-          <button className="btn-primary px-2 py-1 text-xs" onClick={save} disabled={busy}>
-            {busy ? "…" : saved ? "✓ Saved" : "Save"}
+          <button
+            className={dirty ? "btn-primary px-2 py-1 text-xs" : "btn-ghost px-2 py-1 text-xs"}
+            onClick={save}
+            disabled={busy || !dirty}
+          >
+            {busy ? "…" : dirty ? "Save" : "✓ Saved"}
           </button>
           {!isSelf && (
             <button
